@@ -1,0 +1,472 @@
+<!-- ============================================================
+     Model Lab — dialog markup.
+     Loaded at runtime by model-lab.js.
+     To remove the feature: delete the model-lab/ folder
+     and its <script> tag from index.html.
+     ============================================================ -->
+
+<div class="lab-header">
+  <h2>Model Lab</h2>
+  <button type="button" class="icon-btn lab-close" aria-label="Close">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  </button>
+</div>
+
+<div class="lab-tabs">
+  <button class="lab-tab active" data-tab="train">Train</button>
+  <button class="lab-tab" data-tab="stats">Chat Stats</button>
+  <button class="lab-tab" data-tab="guide">Guide</button>
+</div>
+
+<!-- ==================== TRAIN PANE ==================== -->
+<div class="lab-pane active" data-pane="train">
+  <textarea class="lab-textarea"
+    placeholder="Paste any text here (a paragraph, a poem, song lyrics, code…).&#10;The model learns character-by-character to generate text like this.&#10;More text = better results. Try 500+ characters."></textarea>
+
+  <div class="lab-row">
+    <div class="lab-field">
+      <label>Hidden units</label>
+      <input type="number" data-param="hidden" value="128" min="16" max="512" step="16">
+      <span class="lab-field-hint">LSTM memory size</span>
+    </div>
+    <div class="lab-field">
+      <label>Learning rate</label>
+      <input type="number" data-param="lr" value="0.003" min="0.0001" max="0.1" step="0.001">
+      <span class="lab-field-hint">Step size</span>
+    </div>
+    <div class="lab-field">
+      <label>Seq length</label>
+      <input type="number" data-param="seqLen" value="40" min="8" max="128" step="4">
+      <span class="lab-field-hint">Context window</span>
+    </div>
+    <div class="lab-field">
+      <label>Steps</label>
+      <input type="number" data-param="steps" value="300" min="10" max="5000" step="10">
+      <span class="lab-field-hint">Training iters</span>
+    </div>
+    <div class="lab-field">
+      <label>Temperature</label>
+      <input type="number" data-param="temp" value="0.8" min="0.1" max="2" step="0.1">
+      <span class="lab-field-hint">Randomness</span>
+    </div>
+  </div>
+
+  <div class="lab-row">
+    <button class="lab-btn lab-btn-primary" data-action="train">Train</button>
+    <button class="lab-btn lab-btn-danger" data-action="stop" disabled>Stop</button>
+    <button class="lab-btn" data-action="generate" disabled>Generate</button>
+  </div>
+
+  <div class="lab-log"></div>
+</div>
+
+<!-- ==================== CHAT STATS PANE ==================== -->
+<div class="lab-pane" data-pane="stats">
+  <div class="lab-stat-grid">
+    <div class="lab-stat-card">
+      <h3>Latest Request</h3>
+      <div class="lab-stat-row" id="lab-stat-last">Send a chat message, then check back here.</div>
+    </div>
+    <div class="lab-stat-card">
+      <h3>Session Totals</h3>
+      <div class="lab-stat-row" id="lab-stat-session">No data yet.</div>
+    </div>
+  </div>
+  <div class="lab-log" id="lab-chat-log"></div>
+</div>
+
+<!-- ==================== GUIDE PANE ==================== -->
+<div class="lab-pane" data-pane="guide">
+<div class="lab-guide">
+
+  <!-- ====== QUICK START ====== -->
+  <h3>Quick Start</h3>
+  <p>Get your first model running in 60 seconds:</p>
+
+  <div class="lab-guide-step">
+    <b>Step 1</b>
+    Go to the <b>Train</b> tab and paste text into the text box — a paragraph from a book,
+    some song lyrics, a chunk of code, anything with 500+ characters.
+  </div>
+  <div class="lab-guide-step">
+    <b>Step 2</b>
+    Leave the default settings (they're chosen to work well for a first run).
+    Or read the Hyperparameters section below to customize.
+  </div>
+  <div class="lab-guide-step">
+    <b>Step 3</b>
+    Click <b>Train</b> and watch the console. You'll see the model go from random gibberish
+    to recognizable text patterns. The whole run takes 1–3 minutes.
+  </div>
+  <div class="lab-guide-step">
+    <b>Step 4</b>
+    When training finishes, click <b>Generate</b> to produce new text.
+    Change the <b>Temperature</b> slider and generate again — notice how the output changes.
+  </div>
+  <div class="lab-guide-step">
+    <b>Step 5</b>
+    Read the milestones and experiment suggestions the console printed.
+    Try one! Change a setting and train again.
+  </div>
+
+  <div class="lab-callout lab-callout-note">
+    <b>Note</b>
+    The model trains entirely in your browser using your GPU (via TensorFlow.js).
+    Nothing is sent to any server. Your text stays private.
+  </div>
+
+  <!-- ====== WHAT IS A LANGUAGE MODEL ====== -->
+  <h3>What is a Language Model?</h3>
+  <p>
+    A language model is a system that learns to <b>predict the next piece of text</b> given
+    what came before. When you type on your phone and it suggests the next word — that's a
+    language model. ChatGPT is the same idea, massively scaled up.
+  </p>
+  <p>
+    In this lab you're building the simplest version: a <b>character-level</b> model.
+    Instead of predicting whole words, it predicts the next <i>character</i>.
+    Given <code>"hel"</code>, it should learn to predict <code>"l"</code>
+    (to form "hell" or "hello").
+  </p>
+
+  <div class="lab-callout lab-callout-insight">
+    <b>Key Insight</b>
+    Every modern AI text generator — GPT-4, Claude, Gemini, LLaMA — uses the same core loop:
+    predict the next token, check the error, update weights. The differences are in scale and
+    architecture, not the fundamental idea.
+  </div>
+
+  <!-- ====== THE PIPELINE ====== -->
+  <h3>The Training Pipeline</h3>
+  <p>Here's exactly what happens when you click Train:</p>
+
+  <h4>1. Tokenization</h4>
+  <p>
+    Text is converted to numbers. We scan your text, find every unique character,
+    sort them, and assign each an integer ID.
+  </p>
+  <p>
+    Example: if your text contains the characters <code>a b c d e (space)</code>,
+    the mapping might be: <code>space=0, a=1, b=2, c=3, d=4, e=5</code>.
+  </p>
+  <div class="lab-callout lab-callout-note">
+    <b>Note</b>
+    GPT models use <i>subword tokenization</i> (BPE) with ~100,000 tokens like
+    "un", "believ", "able". We use single characters for transparency — you can see
+    exactly what the model sees.
+  </div>
+
+  <h4>2. Embedding</h4>
+  <p>
+    Each character ID is converted into a <b>vector</b> — a list of 32 numbers.
+    Initially random, but during training the model learns to position similar characters
+    nearby in this 32-dimensional space.
+  </p>
+  <p>
+    Why? Because a single integer (like <code>5</code>) gives the model no information about
+    relationships. A vector lets the model learn that <code>a</code> and <code>e</code> are
+    both vowels and should behave similarly.
+  </p>
+
+  <h4>3. LSTM (Long Short-Term Memory)</h4>
+  <p>
+    The core of the model. It reads the sequence of embedded characters one by one,
+    maintaining a <b>hidden state</b> — a vector of numbers that acts as its "memory"
+    of everything it's read so far.
+  </p>
+  <p>At each step, the LSTM decides:</p>
+  <ul>
+    <li><b>Forget gate</b> — what to erase from memory (e.g., a pattern that's no longer relevant)</li>
+    <li><b>Input gate</b> — what new information to store (e.g., "we just saw a vowel")</li>
+    <li><b>Output gate</b> — what to output for this step (what's useful for predicting the next character)</li>
+  </ul>
+  <div class="lab-callout lab-callout-insight">
+    <b>Key Insight</b>
+    The "Long Short-Term Memory" name comes from solving the <i>vanishing gradient problem</i>.
+    Simple RNNs forget things after ~10 steps. LSTMs can remember patterns across hundreds
+    of steps thanks to their gating mechanism.
+  </div>
+
+  <h4>4. Dense Layer + Softmax</h4>
+  <p>
+    The LSTM's output is a hidden vector. The Dense layer converts it into
+    <code>vocabSize</code> numbers — one score per possible next character.
+    Softmax then converts these scores into <b>probabilities that sum to 1</b>.
+  </p>
+  <p>
+    Example output: <code>a: 0.35, b: 0.02, c: 0.01, …, space: 0.28</code>
+    — the model thinks "a" or "space" is most likely next.
+  </p>
+
+  <h4>5. Loss &amp; Backpropagation</h4>
+  <p>
+    We compare the model's predicted probabilities to the <i>actual</i> next character
+    using <b>cross-entropy loss</b>. If the model predicted 0.02 for the correct character,
+    the loss is high. If it predicted 0.95, the loss is low.
+  </p>
+  <p>
+    Then <b>backpropagation</b> calculates how each weight contributed to the error,
+    and the <b>optimizer</b> (Adam) nudges every weight slightly in the direction
+    that reduces the loss. One "step" done.
+  </p>
+
+  <div class="lab-callout lab-callout-insight">
+    <b>Key Insight</b>
+    Training is just optimization. We have a giant math function (the model) with thousands
+    of adjustable knobs (weights). We repeatedly ask "how wrong are you?" (loss) and
+    "which knobs should I turn, and how much?" (gradients via backprop). Repeat thousands of times.
+  </div>
+
+  <!-- ====== READING THE CONSOLE ====== -->
+  <h3>Reading the Console Output</h3>
+  <p>The training console uses color-coded tags. Here's what each one means:</p>
+
+  <div class="lab-color-legend">
+    <span class="lab-color-swatch"><span style="color:#569cd6">[info]</span> System status</span>
+    <span class="lab-color-swatch"><span style="color:#9cdcfe">[learn]</span> Explanation</span>
+    <span class="lab-color-swatch"><span style="color:#4ec9b0">[train]</span> Training step</span>
+    <span class="lab-color-swatch"><span style="color:#ffd700">[milestone]</span> Achievement</span>
+    <span class="lab-color-swatch"><span style="color:#ce9178">[weights]</span> Parameter stats</span>
+    <span class="lab-color-swatch"><span style="color:#b5cea8">[memory]</span> GPU usage</span>
+    <span class="lab-color-swatch"><span style="color:#dcdcaa">[sample]</span> Generated text</span>
+    <span class="lab-color-swatch"><span style="color:#ffcc02">[warn]</span> Problem detected</span>
+    <span class="lab-color-swatch"><span style="color:#c586c0">[experiment]</span> Suggestion</span>
+    <span class="lab-color-swatch"><span style="color:#f44747">[error]</span> Error</span>
+  </div>
+
+  <h4>Key metrics to watch</h4>
+  <ul>
+    <li><b>Loss</b> — the model's error. Lower = better. Your starting loss ≈ <code>ln(vocabSize)</code> (random guessing). Good training gets it well below that.</li>
+    <li><b>Perplexity</b> — <code>e<sup>loss</sup></code>. Means "the model is as uncertain as if choosing between N options." Starting perplexity = vocabulary size. A perplexity of 5 is very good for a tiny model.</li>
+    <li><b>Weight stats</b> — <code>μ</code> (mean) near 0 is healthy. <code>σ</code> (standard deviation) shows specialization. If σ is tiny after many steps, that layer might not be learning. If σ is very large (&gt;1), the model may be unstable.</li>
+    <li><b>Samples</b> — the most intuitive metric! Early samples are gibberish. As training progresses, you'll see common letter pairs, then words, then phrases emerge. Compare samples from step 1 vs step 200.</li>
+  </ul>
+
+  <div class="lab-callout lab-callout-note">
+    <b>Note — What is "normal"?</b>
+    For typical English text with defaults (128 hidden, lr 0.003): loss starts ~3.5–4.0,
+    should reach ~1.5–2.5 after 300 steps. If loss stays above 3.0 after 100 steps,
+    you may need more training text or different settings.
+  </div>
+
+  <!-- ====== HYPERPARAMETERS DEEP DIVE ====== -->
+  <h3>Hyperparameters Deep Dive</h3>
+
+  <h4>Hidden Units (LSTM size)</h4>
+  <p>Controls the model's <i>capacity</i> — how complex the patterns it can learn.</p>
+  <ul>
+    <li><b>32–64</b> — Very small. Learns basic character frequencies and common bigrams (two-letter pairs). Fast to train.</li>
+    <li><b>128</b> — Default. Can learn word-level patterns and short phrases. Good balance of speed and quality.</li>
+    <li><b>256–512</b> — Large. Can capture longer dependencies and rarer patterns. Needs more training data and steps to work well, or it may overfit.</li>
+  </ul>
+  <div class="lab-callout lab-callout-insight">
+    <b>Key Insight</b>
+    More parameters is not always better. A 512-unit model trained on 200 characters will
+    <i>memorize</i> the text (overfit) rather than learn patterns. Match model size to data
+    size. Rule of thumb: your text should have at least 10× more characters than the model
+    has parameters.
+  </div>
+
+  <h4>Learning Rate</h4>
+  <p>The most important hyperparameter. It controls how much weights change per step.</p>
+  <ul>
+    <li><b>0.01–0.1</b> — Aggressive. Model learns fast but may overshoot and jump around or diverge.</li>
+    <li><b>0.001–0.005</b> — Sweet spot for most experiments here. Learning is visible within the first 20 steps.</li>
+    <li><b>0.0001</b> — Very conservative. Loss drops slowly but smoothly. Useful if you have many steps (1000+).</li>
+  </ul>
+  <div class="lab-callout lab-callout-warn">
+    <b>Warning</b>
+    If you see <code>[warn] Loss jumped!</code> in the console, your learning rate is likely
+    too high. Halve it and try again.
+  </div>
+
+  <h4>Sequence Length (Context Window)</h4>
+  <p>How many previous characters the model sees when predicting the next one. This is equivalent to the "context window" in LLMs.</p>
+  <ul>
+    <li><b>10–20</b> — Model can only see nearby characters. Good enough for learning common words but can't capture sentence-level patterns.</li>
+    <li><b>40</b> — Default. Sees about half a sentence. Good for learning word boundaries and phrase patterns.</li>
+    <li><b>80–128</b> — Sees full sentences. Better for structured text like code (needs matching brackets, indentation). Uses more memory.</li>
+  </ul>
+
+  <h4>Temperature</h4>
+  <p>Only affects text <i>generation</i>, not training. Controls the randomness of character selection.</p>
+  <ul>
+    <li><b>0.1–0.3</b> — "Greedy." Almost always picks the highest-probability character. Output is repetitive but coherent.</li>
+    <li><b>0.7–0.9</b> — Balanced. Picks likely characters with some variation. Usually the best-sounding output.</li>
+    <li><b>1.0</b> — Unmodified probabilities. The "true" model distribution.</li>
+    <li><b>1.5–2.0</b> — "Creative." Flattens the distribution so unlikely characters get chosen more. Output gets wild and often nonsensical.</li>
+  </ul>
+  <p>
+    Mathematically: probabilities are divided by temperature before softmax.
+    <code>temp &lt; 1</code> makes the distribution peakier;
+    <code>temp &gt; 1</code> makes it flatter.
+  </p>
+
+  <!-- ====== EXERCISES ====== -->
+  <h3>Hands-On Exercises</h3>
+  <p>Each exercise teaches a core ML concept. Try them in order.</p>
+
+  <div class="lab-exercise">
+    <b>Exercise 1: Your First Model</b><br>
+    Paste a paragraph of English text (300+ chars). Keep all defaults. Click Train.<br>
+    <i>Observe:</i> How quickly does loss drop? At what step do recognizable words first
+    appear in the [sample] output? Write down the step number.
+  </div>
+
+  <div class="lab-exercise">
+    <b>Exercise 2: Learning Rate Crash Course</b><br>
+    Train the same text three times with learning rates:
+    <code>0.1</code>, <code>0.003</code>, <code>0.0001</code>.<br>
+    <i>Observe:</i> At 0.1 the loss likely jumps or explodes. At 0.003 it drops steadily.
+    At 0.0001 it barely moves in 300 steps.<br>
+    <i>Lesson:</i> Learning rate is a tradeoff between speed and stability.
+    Too high = chaos. Too low = wasting compute.
+  </div>
+
+  <div class="lab-exercise">
+    <b>Exercise 3: Overfitting vs Generalization</b><br>
+    First: paste only 100 characters. Train 500 steps with 256 hidden units.
+    Second: paste 3000+ characters with the same settings.<br>
+    <i>Observe:</i> With tiny data, loss hits near-zero and samples are exact copies of
+    the input — the model memorized it (overfit). With more data, loss is higher but
+    samples are <i>original</i> text.<br>
+    <i>Lesson:</i> More data forces the model to learn <i>patterns</i>, not
+    <i>specific text</i>. This is the #1 insight in ML.
+  </div>
+
+  <div class="lab-exercise">
+    <b>Exercise 4: Temperature Exploration</b><br>
+    After training, click Generate with temperature 0.2. Then change to 0.8. Then 1.5.
+    Then 2.0.<br>
+    <i>Observe:</i> Low temp → repetitive and safe. High temp → creative but increasingly
+    garbled.<br>
+    <i>Lesson:</i> This is the same "temperature" slider used in ChatGPT. There's no
+    "right" value — it depends on the task.
+  </div>
+
+  <div class="lab-exercise">
+    <b>Exercise 5: Architecture Comparison</b><br>
+    Train the same text with hidden units: 32, 128, and 512. Same steps (300) and
+    learning rate (0.003).<br>
+    <i>Observe:</i> Compare final loss and sample quality across the three runs.<br>
+    <i>Lesson:</i> Bigger isn't always better. The 512-unit model may not outperform 128
+    if there isn't enough data or training steps to justify the extra capacity.
+  </div>
+
+  <div class="lab-exercise">
+    <b>Exercise 6: Code vs Prose</b><br>
+    Train on a block of Python/JavaScript code (500+ chars). Then train on a novel excerpt
+    of similar length.<br>
+    <i>Observe:</i> Code tends to have lower loss (more predictable patterns: indentation,
+    brackets, keywords). Prose has higher entropy (more possible continuations at each
+    point).<br>
+    <i>Lesson:</i> A model's performance depends on the <i>structure</i> of the data,
+    not just quantity.
+  </div>
+
+  <!-- ====== KEY INSIGHTS ====== -->
+  <h3>Key Insights to Remember</h3>
+
+  <div class="lab-callout lab-callout-insight">
+    <b>Insight 1: Training = Optimization</b>
+    There's no magic. Training is just: predict → measure error → adjust weights → repeat.
+    The "intelligence" emerges from doing this billions of times on vast data.
+  </div>
+
+  <div class="lab-callout lab-callout-insight">
+    <b>Insight 2: Data &gt; Architecture</b>
+    A simple model with lots of data almost always beats a complex model with little data.
+    This is why GPT models are trained on terabytes of text.
+  </div>
+
+  <div class="lab-callout lab-callout-insight">
+    <b>Insight 3: Loss is Not Everything</b>
+    Low loss on training data doesn't guarantee good output. Always check the actual samples.
+    A model can memorize (overfit) and have perfect loss but produce boring, repetitive text.
+  </div>
+
+  <div class="lab-callout lab-callout-insight">
+    <b>Insight 4: Hyperparameters Matter a Lot</b>
+    The same model architecture can perform brilliantly or terribly depending on learning rate,
+    batch size, and other settings. ML engineering is largely about finding good hyperparameters.
+  </div>
+
+  <div class="lab-callout lab-callout-insight">
+    <b>Insight 5: All LLMs Are Next-Token Predictors</b>
+    GPT, Claude, Gemini — they all just predict the next token. The magic of "understanding"
+    and "reasoning" emerges from this simple objective applied at enormous scale.
+  </div>
+
+  <div class="lab-callout lab-callout-insight">
+    <b>Insight 6: Temperature Controls Creativity vs Accuracy</b>
+    This is why the same AI can give you a precise factual answer (low temp) or a creative
+    story (high temp). You're literally changing how it samples from its probability distribution.
+  </div>
+
+  <!-- ====== WHAT TO DO NEXT ====== -->
+  <h3>What to Do Next</h3>
+  <p>Now that you understand the basics, here's a learning path:</p>
+  <ol>
+    <li><b>Complete all 6 exercises above</b> — they build intuition faster than reading alone.</li>
+    <li><b>Read about Transformers</b> — the architecture that replaced LSTMs. Key concept: <i>self-attention</i> lets the model look at all positions at once, not just left-to-right.</li>
+    <li><b>Try a real training framework</b> — use Google Colab (free GPU) with PyTorch to train a GPT-2 small model on your own text.</li>
+    <li><b>Study tokenization</b> — learn about BPE (Byte-Pair Encoding), the tokenizer used by GPT. It's a fascinating algorithm.</li>
+    <li><b>Explore fine-tuning</b> — take a pretrained model and adapt it to a specific task. This is how most real applications work.</li>
+    <li><b>Learn about RLHF</b> — Reinforcement Learning from Human Feedback is what makes ChatGPT "helpful." It's the training stage after next-token prediction.</li>
+  </ol>
+
+  <!-- ====== RESOURCES ====== -->
+  <h3>Recommended Resources</h3>
+
+  <h4>Free Courses (start here)</h4>
+  <a class="lab-resource" href="https://karpathy.ai/zero-to-hero.html" target="_blank" rel="noopener">Andrej Karpathy: Neural Networks Zero to Hero</a>
+  <a class="lab-resource" href="https://course.fast.ai" target="_blank" rel="noopener">fast.ai: Practical Deep Learning</a>
+  <a class="lab-resource" href="https://www.deeplearning.ai/courses/" target="_blank" rel="noopener">DeepLearning.AI (Andrew Ng)</a>
+  <a class="lab-resource" href="https://huggingface.co/learn/nlp-course" target="_blank" rel="noopener">Hugging Face NLP Course</a>
+
+  <h4>Interactive Learning</h4>
+  <a class="lab-resource" href="https://playground.tensorflow.org" target="_blank" rel="noopener">TensorFlow Playground</a>
+  <a class="lab-resource" href="https://bbycroft.net/llm" target="_blank" rel="noopener">LLM Visualization (Brendan Bycroft)</a>
+  <a class="lab-resource" href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener">The Illustrated Transformer</a>
+  <a class="lab-resource" href="https://distill.pub/2019/memorization-in-rnns/" target="_blank" rel="noopener">Distill: Memorization in RNNs</a>
+
+  <h4>Essential Reading</h4>
+  <a class="lab-resource" href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Attention Is All You Need (2017 paper)</a>
+  <a class="lab-resource" href="https://arxiv.org/abs/2005.14165" target="_blank" rel="noopener">GPT-3 Paper (Language Models are Few-Shot Learners)</a>
+  <a class="lab-resource" href="http://karpathy.github.io/2015/05/21/rnn-effectiveness/" target="_blank" rel="noopener">Karpathy: The Unreasonable Effectiveness of RNNs</a>
+
+  <h4>Books</h4>
+  <a class="lab-resource" href="https://www.deeplearningbook.org" target="_blank" rel="noopener">Deep Learning (Goodfellow, Bengio, Courville) — free online</a>
+  <a class="lab-resource" href="https://d2l.ai" target="_blank" rel="noopener">Dive into Deep Learning (d2l.ai) — free, interactive</a>
+
+  <h4>Tools to Explore</h4>
+  <a class="lab-resource" href="https://colab.research.google.com" target="_blank" rel="noopener">Google Colab (free GPU notebooks)</a>
+  <a class="lab-resource" href="https://huggingface.co" target="_blank" rel="noopener">Hugging Face (models, datasets, spaces)</a>
+  <a class="lab-resource" href="https://pytorch.org/tutorials/" target="_blank" rel="noopener">PyTorch Tutorials</a>
+
+  <!-- ====== FROM HERE TO GPT ====== -->
+  <h3>From This Lab to GPT</h3>
+  <p>Here's how your tiny lab model compares to real LLMs:</p>
+  <table class="lab-compare-table">
+    <thead>
+      <tr><th>Aspect</th><th>This Lab</th><th>GPT-4</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Tokenization</td><td>Character-level (~50 tokens)</td><td>BPE (~100K tokens)</td></tr>
+      <tr><td>Architecture</td><td>LSTM (1 layer)</td><td>Transformer (~120 layers)</td></tr>
+      <tr><td>Parameters</td><td>~50K–200K</td><td>~1.8 trillion (estimated)</td></tr>
+      <tr><td>Training data</td><td>Your text box</td><td>Terabytes of internet text</td></tr>
+      <tr><td>Training time</td><td>1–3 minutes</td><td>~3 months on thousands of GPUs</td></tr>
+      <tr><td>Core loop</td><td>Predict next char</td><td>Predict next token (same idea!)</td></tr>
+    </tbody>
+  </table>
+  <p>
+    The difference is <b>scale</b>, not <b>concept</b>.
+    You now understand the fundamental mechanism behind every large language model in the world.
+  </p>
+
+</div>
+</div>
