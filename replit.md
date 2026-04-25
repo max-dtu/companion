@@ -5,7 +5,7 @@ Vanilla JS web app. Ask AI questions, get streaming responses where each word is
 ## Stack
 
 - Vanilla JS in the browser (no bundler, scripts loaded with `defer`)
-- Express server (`server.js`) on port 5000
+- Express server (`server.js`) 
 - OpenAI SDK (`javascript_openai_ai_integrations` integration)
 
 
